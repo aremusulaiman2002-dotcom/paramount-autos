@@ -1,12 +1,14 @@
-'use client'
+'use client';
 
+import { Suspense } from 'react';
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { CheckCircle, Copy, Download, ArrowLeft, Car, Shield, Calendar, MapPin } from 'lucide-react'
 
-export default function BookingSuccess() {
+// Move the main content to a separate component that uses useSearchParams
+function BookingSuccessContent() {
   const searchParams = useSearchParams()
   const [bookingRef, setBookingRef] = useState('')
   const [totalAmount, setTotalAmount] = useState(0)
@@ -187,5 +189,26 @@ export default function BookingSuccess() {
         </div>
       </div>
     </div>
+  )
+}
+
+// Loading component
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-orange-50/30 flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading booking details...</p>
+      </div>
+    </div>
+  )
+}
+
+// Main export with Suspense boundary
+export default function BookingSuccess() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <BookingSuccessContent />
+    </Suspense>
   )
 }
