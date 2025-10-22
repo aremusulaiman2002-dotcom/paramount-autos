@@ -1,44 +1,66 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/db'
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
-    const bookings = await prisma.booking.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
+    const { searchParams } = new URL(request.url)
+    const status = searchParams.get('status')
+    
+    const where = status ? { status } : {}
 
-    return NextResponse.json({ bookings });
+    const bookings = await prisma.booking.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        refNumber: true,
+        customerName: true,
+        phone: true,
+        email: true,
+        totalAmount: true,
+        status: true,
+        paymentStatus: true,
+        createdAt: true,
+        pickupDate: true,
+        dropoffDate: true,
+        pickupLocation: true,
+        dropoffLocation: true,
+        vehicles: true,
+        securityPersonnel: true,
+        additionalNotes: true,
+      }
+    })
+
+    return NextResponse.json(bookings)
   } catch (error) {
-    return NextResponse.json({ error: 'Database error' }, { status: 500 });
+    console.error('Error fetching bookings:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
   }
 }
 
-export async function PUT(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
+export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { bookingId, status } = body;
+    const body = await request.json()
 
-    const booking = await prisma.booking.update({
-      where: { id: bookingId },
-      data: { status },
-    });
+    // Generate a unique reference number
+    const refNumber = `BOOK-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
-    return NextResponse.json({ booking });
+    const booking = await prisma.booking.create({
+      data: {
+        ...body,
+        refNumber,
+      }
+    })
+
+    return NextResponse.json(booking, { status: 201 })
   } catch (error) {
-    return NextResponse.json({ error: 'Update failed' }, { status: 500 });
+    console.error('Error creating booking:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
   }
 }

@@ -1,25 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/db'
+import { generateBookingRef } from '@/lib/utils'
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await request.json()
     
-    // Generate unique booking reference
-    const refNumber = `PMT-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
-    
-    // Calculate totals
-    const vehicleSubtotal = body.vehicles.reduce((sum: number, vehicle: any) => {
-      return sum + (vehicle.subtotal || 0);
-    }, 0);
-    
-    const securitySubtotal = body.securityPersonnel ? body.securityPersonnel.subtotal : 0;
-    const totalAmount = vehicleSubtotal + securitySubtotal;
+    // Validate required fields
+    if (!body.customerName || !body.phone || !body.pickupLocation || !body.dropoffLocation) {
+      return NextResponse.json(
+        { success: false, error: 'Missing required fields' },
+        { status: 400 }
+      )
+    }
 
-    // Create booking in database
+    // Create booking with JSON strings
     const booking = await prisma.booking.create({
       data: {
-        refNumber,
+        refNumber: generateBookingRef(),
         customerName: body.customerName,
         phone: body.phone,
         email: body.email,
@@ -27,49 +25,72 @@ export async function POST(request: NextRequest) {
         dropoffLocation: body.dropoffLocation,
         startDate: new Date(body.startDate),
         endDate: new Date(body.endDate),
-        vehicles: body.vehicles,
-        securityPersonnel: body.securityPersonnel,
-        totalAmount,
+        vehicles: JSON.stringify(body.vehicles), // Convert to JSON string
+        securityPersonnel: body.securityPersonnel ? JSON.stringify(body.securityPersonnel) : null,
+        totalAmount: body.vehicles.reduce((sum: number, vehicle: any) => sum + vehicle.subtotal, 0) + 
+                    (body.securityPersonnel?.subtotal || 0),
         status: 'PENDING',
-      },
-    });
+        paymentStatus: 'PENDING',
+      }
+    })
 
-    return NextResponse.json({ 
-      success: true, 
-      booking: {
+    return NextResponse.json({
+      success: true,
+      data: {
         id: booking.id,
         refNumber: booking.refNumber,
-        totalAmount: booking.totalAmount
+        totalAmount: booking.totalAmount,
+        status: booking.status
       }
-    });
+    })
   } catch (error) {
-    console.error('Booking creation error:', error);
+    console.error('Failed to create booking:', error)
     return NextResponse.json(
-      { error: 'Failed to create booking' },
+      { success: false, error: 'Failed to create booking' },
       { status: 500 }
-    );
+    )
   }
 }
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const refNumber = searchParams.get('ref');
-  
+  const { searchParams } = new URL(request.url)
+  const refNumber = searchParams.get('ref')
+
   if (!refNumber) {
-    return NextResponse.json({ error: 'Reference number required' }, { status: 400 });
+    return NextResponse.json(
+      { success: false, error: 'Booking reference is required' },
+      { status: 400 }
+    )
   }
 
   try {
     const booking = await prisma.booking.findUnique({
-      where: { refNumber },
-    });
+      where: { refNumber }
+    })
 
     if (!booking) {
-      return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: 'Booking not found' },
+        { status: 404 }
+      )
     }
 
-    return NextResponse.json({ booking });
+    // Parse JSON strings back to objects
+    const bookingWithParsedData = {
+      ...booking,
+      vehicles: JSON.parse(booking.vehicles),
+      securityPersonnel: booking.securityPersonnel ? JSON.parse(booking.securityPersonnel) : null
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: bookingWithParsedData
+    })
   } catch (error) {
-    return NextResponse.json({ error: 'Database error' }, { status: 500 });
+    console.error('Failed to fetch booking:', error)
+    return NextResponse.json(
+      { success: false, error: 'Failed to fetch booking' },
+      { status: 500 }
+    )
   }
 }
