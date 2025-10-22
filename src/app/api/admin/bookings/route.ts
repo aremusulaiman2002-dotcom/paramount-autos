@@ -1,13 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
+// Define types for the booking data
+interface BookingData {
+  id: string
+  refNumber: string
+  customerName: string
+  phone: string
+  email?: string
+  totalAmount: number
+  status: string
+  paymentStatus: string
+  createdAt: Date
+  startDate: Date
+  endDate: Date
+  pickupLocation: string
+  dropoffLocation: string
+  vehicles: string
+  securityPersonnel: string | null
+  notes?: string
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
     
     const where = status ? { status } : {}
-
+    
     const bookings = await prisma.booking.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -21,17 +41,24 @@ export async function GET(request: NextRequest) {
         status: true,
         paymentStatus: true,
         createdAt: true,
-        pickupDate: true,
-        dropoffDate: true,
+        startDate: true,
+        endDate: true,
         pickupLocation: true,
         dropoffLocation: true,
         vehicles: true,
         securityPersonnel: true,
-        additionalNotes: true,
+        notes: true,
       }
     })
 
-    return NextResponse.json(bookings)
+    // Parse JSON fields for admin display
+    const bookingsWithParsedData = bookings.map((booking: BookingData) => ({
+      ...booking,
+      vehicles: JSON.parse(booking.vehicles),
+      securityPersonnel: booking.securityPersonnel ? JSON.parse(booking.securityPersonnel) : null
+    }))
+
+    return NextResponse.json(bookingsWithParsedData)
   } catch (error) {
     console.error('Error fetching bookings:', error)
     return NextResponse.json(
@@ -46,12 +73,24 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
 
     // Generate a unique reference number
-    const refNumber = `BOOK-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    const refNumber = `PMT-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`
 
     const booking = await prisma.booking.create({
       data: {
-        ...body,
         refNumber,
+        customerName: body.customerName,
+        phone: body.phone,
+        email: body.email,
+        pickupLocation: body.pickupLocation,
+        dropoffLocation: body.dropoffLocation,
+        startDate: new Date(body.startDate),
+        endDate: new Date(body.endDate),
+        vehicles: JSON.stringify(body.vehicles || []),
+        securityPersonnel: body.securityPersonnel ? JSON.stringify(body.securityPersonnel) : null,
+        totalAmount: body.totalAmount,
+        notes: body.notes,
+        status: 'PENDING',
+        paymentStatus: 'PENDING',
       }
     })
 

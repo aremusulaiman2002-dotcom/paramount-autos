@@ -14,7 +14,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create booking with JSON strings
+    // Calculate total amount
+    const vehiclesTotal = body.vehicles.reduce((sum: number, vehicle: any) => 
+      sum + vehicle.subtotal, 0
+    )
+    const securityTotal = body.securityPersonnel?.subtotal || 0
+    const totalAmount = vehiclesTotal + securityTotal
+
+    // Create booking with proper JSON serialization
     const booking = await prisma.booking.create({
       data: {
         refNumber: generateBookingRef(),
@@ -25,12 +32,12 @@ export async function POST(request: NextRequest) {
         dropoffLocation: body.dropoffLocation,
         startDate: new Date(body.startDate),
         endDate: new Date(body.endDate),
-        vehicles: JSON.stringify(body.vehicles), // Convert to JSON string
-        securityPersonnel: body.securityPersonnel ? JSON.stringify(body.securityPersonnel) : null,
-        totalAmount: body.vehicles.reduce((sum: number, vehicle: any) => sum + vehicle.subtotal, 0) + 
-                    (body.securityPersonnel?.subtotal || 0),
+        vehicles: JSON.stringify(body.vehicles), // Stringify JSON
+        securityPersonnel: body.securityPersonnel ? JSON.stringify(body.securityPersonnel) : null, // Stringify JSON
+        totalAmount,
         status: 'PENDING',
         paymentStatus: 'PENDING',
+        notes: body.notes || null
       }
     })
 
@@ -75,7 +82,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Parse JSON strings back to objects
+    // Parse JSON fields back to objects
     const bookingWithParsedData = {
       ...booking,
       vehicles: JSON.parse(booking.vehicles),

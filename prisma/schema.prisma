@@ -1,13 +1,10 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Vehicle {
@@ -46,8 +43,6 @@ model Booking {
 
   @@map("bookings")
 }
-
-// ==================== AUTHENTICATION MODELS ====================
 
 model Account {
   id                String  @id @default(cuid())
@@ -95,33 +90,6 @@ model User {
   @@map("users")
 }
 
-// ==================== ADMIN MODELS ====================
-
-model Admin {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String   // Hashed password required for admins
-  name      String
-  role      AdminRole @default(MANAGER)
-  isActive  Boolean  @default(true)
-  lastLogin DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  sessions  AdminSession[] // ADD THIS LINE - reverse relation
-
-  @@map("admins")
-}
-
-model AdminSession {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  adminId      String
-  expires      DateTime
-  admin        Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
-
-  @@map("admin_sessions")
-}
-
 model VerificationToken {
   identifier String
   token      String   @unique
@@ -130,8 +98,6 @@ model VerificationToken {
   @@unique([identifier, token])
   @@map("verification_tokens")
 }
-
-// ==================== ENUMS ====================
 
 enum BookingStatus {
   PENDING
@@ -148,12 +114,6 @@ enum PaymentStatus {
 
 enum UserRole {
   USER
-  PREMIUM
-}
-
-enum AdminRole {
-  SUPER_ADMIN
   ADMIN
-  MANAGER
-  VIEWER
+  SUPER_ADMIN
 }
