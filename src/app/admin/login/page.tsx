@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useState, useEffect } from 'react'
 import { signIn, getSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -9,7 +10,8 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { AlertCircle, Shield, Eye, EyeOff } from 'lucide-react'
 
-export default function AdminLogin() {
+// Main login component that uses useSearchParams
+function AdminLoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
@@ -195,5 +197,26 @@ export default function AdminLogin() {
         </Card>
       </div>
     </div>
+  )
+}
+
+// Loading component
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-orange-50/30 flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading login page...</p>
+      </div>
+    </div>
+  )
+}
+
+// Main export with Suspense boundary
+export default function AdminLogin() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <AdminLoginContent />
+    </Suspense>
   )
 }
