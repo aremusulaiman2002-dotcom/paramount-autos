@@ -269,7 +269,7 @@ export default function HomePage() {
               and professional security personnel for your most important journeys.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center px-4">
-              <Link href="/vehicles" className="w-full sm:w-auto">
+              <Link href="/booking" className="w-full sm:w-auto">
                 <Button size="lg" className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white py-4 text-base font-semibold rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300">
                   Explore Our Fleet
                 </Button>

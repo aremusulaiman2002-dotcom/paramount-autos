@@ -50,9 +50,8 @@ function Header() {
           <nav className="hidden lg:flex items-center space-x-6">
             {[
               { name: 'Home', href: '/' },
-              { name: 'Our Fleet', href: '/vehicles' },
+              { name: 'Track', href: '/track' },
               { name: 'Services', href: '/services' },
-              { name: 'Security', href: '/security' },
               { name: 'About', href: '/about' },
               { name: 'Contact', href: '/contact' },
             ].map((item) => (
@@ -95,9 +94,8 @@ function Header() {
             <nav className="flex flex-col space-y-1 px-4">
               {[
                 { name: 'Home', href: '/' },
-                { name: 'Our Fleet', href: '/vehicles' },
+                { name: 'Track', href: '/track' },
                 { name: 'Services', href: '/services' },
-                { name: 'Security', href: '/security' },
                 { name: 'About', href: '/about' },
                 { name: 'Contact', href: '/contact' },
               ].map((item) => (
