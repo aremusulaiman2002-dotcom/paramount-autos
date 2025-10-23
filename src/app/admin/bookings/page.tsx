@@ -1,61 +1,74 @@
+// src/app/admin/bookings/page.tsx
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatPrice, formatDisplayDate } from '@/lib/utils'
-import { Eye, Filter, Download } from 'lucide-react'
+import { Eye, Filter, Download, RefreshCw } from 'lucide-react'
 import { db } from '@/lib/db'
 import { bookings } from '@/lib/schema'
-import { desc } from 'drizzle-orm'
+import { desc, sql } from 'drizzle-orm'
 
 interface Booking {
   id: string
   refNumber: string
   customerName: string
   phone: string
-  email: string | null // Updated to match Drizzle
+  email: string | null
   totalAmount: number
-  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | null // Added null
-  paymentStatus: 'PENDING' | 'VERIFIED' | 'FAILED' | null // Added null
-  createdAt: Date | null // Added null
+  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | null
+  paymentStatus: 'PENDING' | 'VERIFIED' | 'FAILED' | null
+  createdAt: Date | null
   pickupLocation: string
   dropoffLocation: string
   vehicles: string
-  securityPersonnel: string | null // Updated to match Drizzle
+  securityPersonnel: string | null
 }
 
 async function getBookings(): Promise<Booking[]> {
   try {
+    console.log('🔄 Fetching fresh bookings data...')
+    
+    // Use no-store fetch to get real-time data from API
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+    const response = await fetch(`${baseUrl}/api/admin/bookings`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store'
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch bookings')
+    }
+
+    const bookingsData = await response.json()
+    console.log('✅ Fresh bookings data received:', bookingsData.length)
+    
+    return bookingsData
+  } catch (error) {
+    console.error('❌ Error fetching bookings:', error)
+    
+    // Fallback to direct database query
     const allBookings = await db
-      .select({
-        id: bookings.id,
-        refNumber: bookings.refNumber,
-        customerName: bookings.customerName,
-        phone: bookings.phone,
-        email: bookings.email,
-        totalAmount: bookings.totalAmount,
-        status: bookings.status,
-        paymentStatus: bookings.paymentStatus,
-        createdAt: bookings.createdAt,
-        pickupLocation: bookings.pickupLocation,
-        dropoffLocation: bookings.dropoffLocation,
-        vehicles: bookings.vehicles,
-        securityPersonnel: bookings.securityPersonnel
-      })
+      .select()
       .from(bookings)
       .orderBy(desc(bookings.createdAt))
 
     return allBookings as Booking[]
-  } catch (error) {
-    console.error('Error fetching bookings:', error)
-    return []
   }
 }
 
 export default async function BookingsPage() {
   const bookings = await getBookings()
 
-  const getStatusColor = (status: string | null) => { // Allow null
+  console.log('🔍 Bookings page rendering with:', bookings.length, 'bookings')
+
+  const getStatusColor = (status: string | null) => {
     switch (status) {
       case 'CONFIRMED': return 'bg-green-100 text-green-800'
       case 'COMPLETED': return 'bg-blue-100 text-blue-800'
@@ -64,7 +77,7 @@ export default async function BookingsPage() {
     }
   }
 
-  const getPaymentStatusColor = (status: string | null) => { // Allow null
+  const getPaymentStatusColor = (status: string | null) => {
     switch (status) {
       case 'VERIFIED': return 'bg-green-100 text-green-800'
       case 'FAILED': return 'bg-red-100 text-red-800'
@@ -77,22 +90,32 @@ export default async function BookingsPage() {
       const vehicles = JSON.parse(booking.vehicles)
       const securityPersonnel = booking.securityPersonnel ? JSON.parse(booking.securityPersonnel) : null
       
-      const totalVehicles = Array.isArray(vehicles) 
-        ? vehicles.reduce((sum: number, vehicle: any) => sum + (vehicle.quantity || 0), 0)
-        : 0
+      let totalVehicles = 0
+      let vehicleNames = ''
+
+      if (vehicles && vehicles.vehicleIds && Array.isArray(vehicles.vehicleIds)) {
+        totalVehicles = vehicles.vehicleIds.length
+        vehicleNames = `${vehicles.vehicleIds.length} vehicle${vehicles.vehicleIds.length !== 1 ? 's' : ''}`
+      } else if (Array.isArray(vehicles)) {
+        totalVehicles = vehicles.reduce((sum: number, vehicle: any) => sum + (vehicle.quantity || 1), 0)
+        vehicleNames = vehicles.map((v: any) => v.name || 'Vehicle').join(', ')
+      } else {
+        vehicleNames = 'No vehicles'
+      }
 
       const securityCount = securityPersonnel?.count || 0
 
       return {
         totalVehicles,
         securityCount,
-        vehicleNames: Array.isArray(vehicles) ? vehicles.map((v: any) => v.name).join(', ') : ''
+        vehicleNames
       }
     } catch (error) {
+      console.error('Error parsing booking data:', error)
       return {
         totalVehicles: 0,
         securityCount: 0,
-        vehicleNames: ''
+        vehicleNames: 'Error parsing vehicles'
       }
     }
   }
@@ -102,15 +125,28 @@ export default async function BookingsPage() {
   const pendingBookings = bookings.filter((b: Booking) => b.status === 'PENDING').length
   const confirmedBookings = bookings.filter((b: Booking) => b.status === 'CONFIRMED').length
   const completedBookings = bookings.filter((b: Booking) => b.status === 'COMPLETED').length
+  const cancelledBookings = bookings.filter((b: Booking) => b.status === 'CANCELLED').length
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Bookings Management</h1>
-          <p className="text-gray-600 mt-1">Manage all customer bookings and reservations</p>
+          <p className="text-gray-600 mt-1">
+            Live updates • Total: {totalBookings} • Last updated: {new Date().toLocaleTimeString()}
+          </p>
         </div>
         <div className="flex items-center space-x-4">
+          <form action={async () => {
+            'use server'
+            // This will re-run the page data
+            console.log('Manual refresh triggered')
+          }}>
+            <Button type="submit" variant="outline" className="flex items-center space-x-2">
+              <RefreshCw className="w-4 h-4" />
+              <span>Refresh</span>
+            </Button>
+          </form>
           <Button variant="outline" className="flex items-center space-x-2">
             <Filter className="w-4 h-4" />
             <span>Filter</span>
@@ -123,11 +159,11 @@ export default async function BookingsPage() {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-gray-900">{totalBookings}</div>
-            <div className="text-sm text-gray-600">Total Bookings</div>
+            <div className="text-sm text-gray-600">Total</div>
           </CardContent>
         </Card>
         <Card>
@@ -148,26 +184,32 @@ export default async function BookingsPage() {
             <div className="text-sm text-gray-600">Completed</div>
           </CardContent>
         </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-red-600">{cancelledBookings}</div>
+            <div className="text-sm text-gray-600">Cancelled</div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Bookings Table */}
       <Card>
         <CardHeader>
-          <CardTitle>All Bookings</CardTitle>
+          <CardTitle>All Bookings ({totalBookings})</CardTitle>
           <CardDescription>
-            Recent customer bookings and their status
+            Real-time customer bookings • Auto-refreshes on page navigation
           </CardDescription>
         </CardHeader>
         <CardContent>
           {bookings.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <p>No bookings found</p>
-              <p className="text-sm mt-1">Customer bookings will appear here</p>
+              <p className="text-sm mt-1">Customer bookings will appear here automatically</p>
             </div>
           ) : (
             <div className="space-y-4">
               {bookings.map((booking: Booking) => {
-                const { totalVehicles, securityCount } = parseBookingData(booking)
+                const { totalVehicles, securityCount, vehicleNames } = parseBookingData(booking)
                 
                 return (
                   <div
