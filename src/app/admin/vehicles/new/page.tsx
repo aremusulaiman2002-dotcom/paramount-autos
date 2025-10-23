@@ -22,15 +22,21 @@ export default function NewVehiclePage() {
     setIsLoading(true)
 
     const formData = new FormData(e.currentTarget)
+    
+    // FIX: Ensure availability is always true for new vehicles
+    const availability = formData.get('availability') === 'on'
+    
     const vehicleData = {
       name: formData.get('name'),
       type: formData.get('type'),
       pricePerDay: parseInt(formData.get('pricePerDay') as string),
       description: formData.get('description'),
-      image: formData.get('image'),
-      availability: formData.get('availability') === 'on',
-      features: JSON.stringify(features),
+      image: formData.get('image') || null,
+      availability: true, // FIX: Always set to true for new vehicles
+      features: JSON.stringify(features), // This is correct - it should be a JSON string
     }
+
+    console.log('🆕 Creating vehicle with data:', vehicleData) // Debug log
 
     try {
       const response = await fetch('/api/admin/vehicles', {
@@ -41,11 +47,14 @@ export default function NewVehiclePage() {
         body: JSON.stringify(vehicleData),
       })
 
+      const result = await response.json()
+      console.log('✅ Vehicle creation response:', result) // Debug log
+
       if (response.ok) {
         router.push('/admin/vehicles')
         router.refresh()
       } else {
-        alert('Failed to create vehicle')
+        alert(result.error || 'Failed to create vehicle')
       }
     } catch (error) {
       console.error('Error creating vehicle:', error)
@@ -150,16 +159,15 @@ export default function NewVehiclePage() {
                   />
                 </div>
                 
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <Label htmlFor="availability" className="text-base">Available for Booking</Label>
-                    <p className="text-sm text-gray-600">Make this vehicle available to customers</p>
+                {/* FIX: Remove the availability switch since it's always true for new vehicles */}
+                <div className="p-4 border rounded-lg bg-green-50 border-green-200">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <div>
+                      <Label className="text-base text-green-800">Available for Booking</Label>
+                      <p className="text-sm text-green-600">New vehicles are automatically available to customers</p>
+                    </div>
                   </div>
-                  <Switch 
-                    id="availability" 
-                    name="availability" 
-                    defaultChecked 
-                  />
                 </div>
               </div>
             </div>

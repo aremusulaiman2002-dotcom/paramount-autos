@@ -155,6 +155,12 @@ export default function BookingForm({ vehicles }: BookingFormProps) {
     endDate: '',
   });
 
+  // Debug: Log vehicles data
+  useEffect(() => {
+    console.log('🔧 BookingForm - vehicles received:', vehicles);
+    console.log('🔧 BookingForm - vehicles count:', vehicles?.length);
+  }, [vehicles]);
+
   // Helper function to calculate vehicle subtotal
   const calculateVehicleSubtotal = (pricePerDay: number, quantity: number, days: number) => {
     return pricePerDay * quantity * days;
@@ -274,22 +280,24 @@ export default function BookingForm({ vehicles }: BookingFormProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          customerName: formData.customerName,
+          name: formData.customerName,
           phone: formData.phone,
           email: formData.email,
-          pickupLocation: formData.pickupLocation,
-          dropoffLocation: formData.dropoffLocation,
+          pickup: formData.pickupLocation,
+          destination: formData.dropoffLocation,
           startDate: formData.startDate,
           endDate: formData.endDate,
-          vehicles: selectedVehicles,
+          vehicleIds: selectedVehicles.map(v => v.vehicleId),
+          rentalDays: rentalDays,
           securityPersonnel: securityData,
+          totalPrice: totalPrice.toString(),
         }),
       });
 
       const result = await response.json();
 
       if (result.success) {
-        router.push(`/booking/success?ref=${result.data.refNumber}&amount=${result.data.totalAmount}`);
+        router.push(`/booking/success?ref=${result.bookingId}&amount=${totalPrice}`);
       } else {
         throw new Error(result.error || 'Failed to create booking');
       }
@@ -313,7 +321,7 @@ export default function BookingForm({ vehicles }: BookingFormProps) {
       <Header />
       
       <div className="container mx-auto px-4 py-8 max-w-6xl">
-        {/* Progress Steps - Enhanced Design */}
+        {/* Progress Steps */}
         <div className="mb-8">
           <div className="text-center mb-6">
             <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 to-orange-700 bg-clip-text text-transparent">
@@ -350,7 +358,7 @@ export default function BookingForm({ vehicles }: BookingFormProps) {
         </div>
 
         <form onSubmit={handleSubmit}>
-          {/* Step 1: Vehicle Selection - Enhanced Design */}
+          {/* Step 1: Vehicle Selection */}
           {currentStep === 1 && (
             <Card className="border-0 shadow-xl">
               <CardHeader className="bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-t-2xl py-6">
@@ -466,7 +474,7 @@ export default function BookingForm({ vehicles }: BookingFormProps) {
             </Card>
           )}
 
-          {/* Step 2: Trip Details - Enhanced Design */}
+          {/* Step 2: Trip Details */}
           {currentStep === 2 && (
             <div className="grid lg:grid-cols-3 gap-6">
               {/* Main Form */}
@@ -673,7 +681,7 @@ export default function BookingForm({ vehicles }: BookingFormProps) {
             </div>
           )}
 
-          {/* Step 3: Contact Information - Enhanced Design */}
+          {/* Step 3: Contact Information */}
           {currentStep === 3 && (
             <div className="grid lg:grid-cols-3 gap-6">
               {/* Contact Form */}
@@ -714,7 +722,7 @@ export default function BookingForm({ vehicles }: BookingFormProps) {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="font-semibold">Email Address *</Label>
+                    <Label htmlFor="email" className="font-semibold">Email Address</Label>
                     <Input
                       id="email"
                       type="email"
@@ -722,7 +730,6 @@ export default function BookingForm({ vehicles }: BookingFormProps) {
                       onChange={(e) => setFormData({...formData, email: e.target.value})}
                       placeholder="your@email.com"
                       className="py-3 rounded-xl"
-                      required
                     />
                   </div>
                 </CardContent>

@@ -28,7 +28,7 @@ import {
   Music
 } from 'lucide-react'
 
-// Interfaces based on actual Prisma response
+// Interfaces updated to match Drizzle schema
 interface VehicleDetail {
   id: string
   name: string
@@ -67,18 +67,18 @@ interface Booking {
   refNumber: string
   customerName: string
   phone: string
-  email?: string
+  email: string | null
   totalAmount: number
-  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED'
-  paymentStatus: 'PENDING' | 'VERIFIED' | 'FAILED'
-  createdAt: string
+  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | null
+  paymentStatus: 'PENDING' | 'VERIFIED' | 'FAILED' | null
+  createdAt: string | null
   startDate: string
   endDate: string
   pickupLocation: string
   dropoffLocation: string
-  vehicles: any[] // Could be JSON string or array
-  securityPersonnel?: any // Could be JSON string or object
-  notes?: string
+  vehicles: string
+  securityPersonnel: string | null
+  notes: string | null
 }
 
 interface ApiResponse {
@@ -100,23 +100,27 @@ export default function BookingDetailPage({
     const fetchBooking = async () => {
       try {
         const { id } = await params
-        const response = await fetch(`/api/bookings/${id}`)
+        console.log('🔍 Fetching booking with ID:', id)
+        
+        const response = await fetch(`/api/admin/bookings/${id}`)
+        console.log('🔍 Response status:', response.status)
         
         if (response.ok) {
           const result = await response.json()
+          console.log('🔍 API Response:', result)
           
           // Handle both response formats
           if (result.success && result.data) {
-            // If API returns { success: true, data: booking }
             setBooking(result.data)
           } else if (result.id) {
-            // If API returns booking directly
             setBooking(result)
           } else {
             console.error('Unexpected API response format:', result)
           }
         } else {
           console.error('Failed to fetch booking:', response.status)
+          const errorData = await response.json()
+          console.error('Error details:', errorData)
         }
       } catch (error) {
         console.error('Error fetching booking:', error)
@@ -128,7 +132,8 @@ export default function BookingDetailPage({
     fetchBooking()
   }, [params])
 
-  const formatDisplayDate = (dateString: string) => {
+  const formatDisplayDate = (dateString: string | null) => {
+    if (!dateString) return 'Unknown date'
     try {
       const date = new Date(dateString)
       return date.toLocaleDateString('en-US', {
@@ -148,32 +153,76 @@ export default function BookingDetailPage({
     if (!booking) return { vehicles: [], securityPersonnel: null, totalVehicles: 0, securityCount: 0 }
     
     try {
-      // Parse vehicles - handle both string and array formats
-      let vehicles: VehicleDetail[] = []
-      if (typeof booking.vehicles === 'string') {
-        vehicles = JSON.parse(booking.vehicles)
-      } else if (Array.isArray(booking.vehicles)) {
-        vehicles = booking.vehicles
+      console.log('🔍 Raw vehicles data:', booking.vehicles)
+      console.log('🔍 Raw security data:', booking.securityPersonnel)
+      
+      // Parse vehicles - always string in Drizzle
+      let vehicles: any[] = []
+      if (booking.vehicles) {
+        const parsedVehicles = JSON.parse(booking.vehicles)
+        console.log('🔍 Parsed vehicles structure:', parsedVehicles)
+        
+        // Handle different possible structures
+        if (Array.isArray(parsedVehicles)) {
+          // Case 1: Direct array of vehicles
+          vehicles = parsedVehicles
+        } else if (parsedVehicles.vehicleIds && Array.isArray(parsedVehicles.vehicleIds)) {
+          // Case 2: Object with vehicleIds array (from booking form)
+          // We need to reconstruct the vehicle details
+          vehicles = parsedVehicles.vehicleIds.map((vehicleId: string, index: number) => ({
+            id: vehicleId,
+            name: `Vehicle ${index + 1}`,
+            type: 'Unknown',
+            quantity: 1,
+            pricePerDay: 0,
+            days: parsedVehicles.rentalDays || 1,
+            subtotal: 0
+          }))
+        } else if (parsedVehicles.vehicles && Array.isArray(parsedVehicles.vehicles)) {
+          // Case 3: Object with vehicles array
+          vehicles = parsedVehicles.vehicles
+        } else {
+          // Case 4: Unknown structure, create basic vehicle info
+          vehicles = [{
+            id: 'unknown',
+            name: 'Vehicle',
+            type: 'Unknown',
+            quantity: 1,
+            pricePerDay: 0,
+            days: 1,
+            subtotal: 0
+          }]
+        }
       }
 
-      // Parse security personnel - handle both string and object formats
+      // Parse security personnel - always string or null in Drizzle
       let securityPersonnel: SecurityDetail | null = null
       if (booking.securityPersonnel) {
-        if (typeof booking.securityPersonnel === 'string') {
+        try {
           securityPersonnel = JSON.parse(booking.securityPersonnel)
-        } else {
-          securityPersonnel = booking.securityPersonnel
+        } catch (securityError) {
+          console.error('Error parsing security data:', securityError)
+          securityPersonnel = null
         }
       }
       
+      // Ensure vehicles is always an array and has the required properties
+      const safeVehicles = Array.isArray(vehicles) ? vehicles : []
+      
+      console.log('🔍 Final vehicles array:', safeVehicles)
+      console.log('🔍 Final security data:', securityPersonnel)
+      
       return {
-        vehicles: Array.isArray(vehicles) ? vehicles : [],
+        vehicles: safeVehicles,
         securityPersonnel,
-        totalVehicles: vehicles.reduce((sum: number, vehicle: VehicleDetail) => sum + (vehicle.quantity || 0), 0),
+        totalVehicles: safeVehicles.reduce((sum: number, vehicle: any) => sum + (vehicle.quantity || 1), 0),
         securityCount: securityPersonnel?.count || 0
       }
     } catch (error) {
       console.error('Error parsing booking data:', error)
+      console.error('Raw vehicles data:', booking?.vehicles)
+      console.error('Raw security data:', booking?.securityPersonnel)
+      
       return {
         vehicles: [],
         securityPersonnel: null,
@@ -185,7 +234,7 @@ export default function BookingDetailPage({
 
   const { vehicles, securityPersonnel, totalVehicles, securityCount } = parseBookingData()
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | null) => {
     switch (status) {
       case 'CONFIRMED': return 'bg-green-100 text-green-800'
       case 'COMPLETED': return 'bg-blue-100 text-blue-800'
@@ -194,7 +243,7 @@ export default function BookingDetailPage({
     }
   }
 
-  const getPaymentStatusColor = (status: string) => {
+  const getPaymentStatusColor = (status: string | null) => {
     switch (status) {
       case 'VERIFIED': return 'bg-green-100 text-green-800'
       case 'FAILED': return 'bg-red-100 text-red-800'
@@ -207,7 +256,7 @@ export default function BookingDetailPage({
     
     setIsUpdating(true)
     try {
-      const response = await fetch(`/api/bookings/${booking.id}`, {
+      const response = await fetch(`/api/admin/bookings/${booking.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -241,16 +290,17 @@ export default function BookingDetailPage({
   }
 
   const getFeatureIcon = (feature: string) => {
-    const featureIcons: { [key: string]: JSX.Element } = {
+    const featureIcons = {
       'air conditioning': <Snowflake className="w-3 h-3" />,
       'navigation': <Navigation className="w-3 h-3" />,
       'bluetooth': <Music className="w-3 h-3" />,
       'wifi': <Wifi className="w-3 h-3" />,
     }
-    return featureIcons[feature.toLowerCase()] || <CheckCircle className="w-3 h-3" />
+    
+    return featureIcons[feature.toLowerCase() as keyof typeof featureIcons] || <CheckCircle className="w-3 h-3" />
   }
 
-  const VehicleCard = ({ vehicle, index }: { vehicle: VehicleDetail; index: number }) => (
+  const VehicleCard = ({ vehicle, index }: { vehicle: any; index: number }) => (
     <div key={index} className="p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
       <div className="flex justify-between items-start">
         <div className="flex-1">
@@ -297,11 +347,11 @@ export default function BookingDetailPage({
                 </div>
               </div>
 
-              {vehicle.features && vehicle.features.length > 0 && (
+              {vehicle.features && Array.isArray(vehicle.features) && vehicle.features.length > 0 && (
                 <div className="mb-2">
                   <p className="text-xs font-medium text-gray-500 mb-1">Features:</p>
                   <div className="flex flex-wrap gap-1">
-                    {vehicle.features.slice(0, 4).map((feature, idx) => (
+                    {vehicle.features.slice(0, 4).map((feature: string, idx: number) => (
                       <Badge key={idx} variant="outline" className="text-xs flex items-center space-x-1">
                         {getFeatureIcon(feature)}
                         <span>{feature}</span>
@@ -482,10 +532,10 @@ export default function BookingDetailPage({
   )
 
   const ServiceSummary = () => {
-    const totalVehicles = vehicles.reduce((sum, vehicle) => sum + (vehicle.quantity || 1), 0)
+    if (!booking) return null
+    
+    const totalVehicles = vehicles.reduce((sum: number, vehicle: any) => sum + (vehicle.quantity || 1), 0)
     const totalSecurityPersonnel = securityPersonnel?.count || 0
-    const vehicleTotal = vehicles.reduce((sum, vehicle) => sum + (vehicle.subtotal || 0), 0)
-    const securityTotal = securityPersonnel?.subtotal || 0
     const differentVehicleTypes = vehicles.length
 
     return (
@@ -530,8 +580,8 @@ export default function BookingDetailPage({
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-600">Duration</p>
-                <p className="text-xl font-bold">{calculateDays(booking!.startDate, booking!.endDate)}</p>
-                <p className="text-xs text-gray-500">day{calculateDays(booking!.startDate, booking!.endDate) !== 1 ? 's' : ''}</p>
+                <p className="text-xl font-bold">{calculateDays(booking.startDate, booking.endDate)}</p>
+                <p className="text-xs text-gray-500">day{calculateDays(booking.startDate, booking.endDate) !== 1 ? 's' : ''}</p>
               </div>
             </div>
           </CardContent>
@@ -545,7 +595,7 @@ export default function BookingDetailPage({
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Cost</p>
-                <p className="text-xl font-bold">{formatPrice(booking!.totalAmount)}</p>
+                <p className="text-xl font-bold">{formatPrice(booking.totalAmount)}</p>
                 <p className="text-xs text-gray-500">Final amount</p>
               </div>
             </div>
@@ -694,10 +744,10 @@ export default function BookingDetailPage({
         
         <div className="flex items-center space-x-2">
           <Badge className={getStatusColor(booking.status)}>
-            {booking.status.toLowerCase()}
+            {booking.status?.toLowerCase() || 'unknown'}
           </Badge>
           <Badge variant="outline" className={getPaymentStatusColor(booking.paymentStatus)}>
-            {booking.paymentStatus.toLowerCase()}
+            {booking.paymentStatus?.toLowerCase() || 'unknown'}
           </Badge>
         </div>
       </div>
@@ -801,7 +851,7 @@ export default function BookingDetailPage({
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="font-semibold text-lg flex items-center space-x-2">
                       <Car className="w-5 h-5" />
-                      <span>Vehicles ({vehicles.reduce((sum, v) => sum + (v.quantity || 1), 0)})</span>
+                      <span>Vehicles ({vehicles.reduce((sum: number, v: any) => sum + (v.quantity || 1), 0)})</span>
                     </h4>
                     <Badge variant="outline">
                       {vehicles.length} type{vehicles.length !== 1 ? 's' : ''}
@@ -810,7 +860,7 @@ export default function BookingDetailPage({
                   
                   <div className="space-y-3">
                     {vehicles.length > 0 ? (
-                      vehicles.map((vehicle, index) => (
+                      vehicles.map((vehicle: any, index: number) => (
                         <VehicleCard key={`${vehicle.id || index}-${index}`} vehicle={vehicle} index={index} />
                       ))
                     ) : (
@@ -864,7 +914,7 @@ export default function BookingDetailPage({
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Vehicle Costs */}
-              {vehicles.map((vehicle, index) => (
+              {vehicles.map((vehicle: any, index: number) => (
                 <div key={index} className="flex justify-between text-sm">
                   <span>{vehicle.quantity || 1}x {vehicle.name || `Vehicle ${index + 1}`}:</span>
                   <span>{formatPrice(vehicle.subtotal || 0)}</span>

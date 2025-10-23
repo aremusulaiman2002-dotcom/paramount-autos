@@ -4,45 +4,48 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { formatPrice, formatDisplayDate } from '@/lib/utils'
 import { Eye, Filter, Download } from 'lucide-react'
-import { prisma } from '@/lib/db'
+import { db } from '@/lib/db'
+import { bookings } from '@/lib/schema'
+import { desc } from 'drizzle-orm'
 
 interface Booking {
   id: string
   refNumber: string
   customerName: string
   phone: string
-  email?: string
+  email: string | null // Updated to match Drizzle
   totalAmount: number
-  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED'
-  paymentStatus: 'PENDING' | 'VERIFIED' | 'FAILED'
-  createdAt: Date
+  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | null // Added null
+  paymentStatus: 'PENDING' | 'VERIFIED' | 'FAILED' | null // Added null
+  createdAt: Date | null // Added null
   pickupLocation: string
   dropoffLocation: string
   vehicles: string
-  securityPersonnel?: string
+  securityPersonnel: string | null // Updated to match Drizzle
 }
 
 async function getBookings(): Promise<Booking[]> {
   try {
-    const bookings = await prisma.booking.findMany({
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        refNumber: true,
-        customerName: true,
-        phone: true,
-        email: true,
-        totalAmount: true,
-        status: true,
-        paymentStatus: true,
-        createdAt: true,
-        pickupLocation: true,
-        dropoffLocation: true,
-        vehicles: true,
-        securityPersonnel: true
-      }
-    })
-    return bookings as Booking[]
+    const allBookings = await db
+      .select({
+        id: bookings.id,
+        refNumber: bookings.refNumber,
+        customerName: bookings.customerName,
+        phone: bookings.phone,
+        email: bookings.email,
+        totalAmount: bookings.totalAmount,
+        status: bookings.status,
+        paymentStatus: bookings.paymentStatus,
+        createdAt: bookings.createdAt,
+        pickupLocation: bookings.pickupLocation,
+        dropoffLocation: bookings.dropoffLocation,
+        vehicles: bookings.vehicles,
+        securityPersonnel: bookings.securityPersonnel
+      })
+      .from(bookings)
+      .orderBy(desc(bookings.createdAt))
+
+    return allBookings as Booking[]
   } catch (error) {
     console.error('Error fetching bookings:', error)
     return []
@@ -52,7 +55,7 @@ async function getBookings(): Promise<Booking[]> {
 export default async function BookingsPage() {
   const bookings = await getBookings()
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | null) => { // Allow null
     switch (status) {
       case 'CONFIRMED': return 'bg-green-100 text-green-800'
       case 'COMPLETED': return 'bg-blue-100 text-blue-800'
@@ -61,7 +64,7 @@ export default async function BookingsPage() {
     }
   }
 
-  const getPaymentStatusColor = (status: string) => {
+  const getPaymentStatusColor = (status: string | null) => { // Allow null
     switch (status) {
       case 'VERIFIED': return 'bg-green-100 text-green-800'
       case 'FAILED': return 'bg-red-100 text-red-800'
@@ -178,13 +181,16 @@ export default async function BookingsPage() {
                             {booking.customerName}
                           </h3>
                           <p className="text-sm text-gray-600">{booking.phone}</p>
+                          {booking.email && (
+                            <p className="text-sm text-gray-500">{booking.email}</p>
+                          )}
                         </div>
                         <div className="flex items-center space-x-2">
                           <Badge className={getStatusColor(booking.status)}>
-                            {booking.status.toLowerCase()}
+                            {booking.status?.toLowerCase() || 'unknown'}
                           </Badge>
                           <Badge variant="outline" className={getPaymentStatusColor(booking.paymentStatus)}>
-                            {booking.paymentStatus.toLowerCase()}
+                            {booking.paymentStatus?.toLowerCase() || 'unknown'}
                           </Badge>
                         </div>
                       </div>
@@ -206,7 +212,7 @@ export default async function BookingsPage() {
                         <div>
                           <span className="font-medium">Booked:</span>
                           <span className="ml-2">
-                            {formatDisplayDate(booking.createdAt)}
+                            {booking.createdAt ? formatDisplayDate(booking.createdAt) : 'Unknown date'}
                           </span>
                         </div>
                         <div>

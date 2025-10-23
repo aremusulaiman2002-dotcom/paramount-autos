@@ -146,8 +146,13 @@ export default function TrackBooking() {
     setBooking(null);
 
     try {
-      const response = await fetch(`/api/bookings?ref=${refNumber.trim()}`);
+      console.log('🔍 Tracking booking:', { refNumber });
+      
+      const response = await fetch(`/api/bookings?bookingId=${refNumber.trim()}`);
+      console.log('🔍 Response status:', response.status);
+      
       const result = await response.json();
+      console.log('🔍 API Response:', result);
 
       if (result.success) {
         setBooking(result.data);
@@ -155,6 +160,7 @@ export default function TrackBooking() {
         setError(result.error || 'Booking not found');
       }
     } catch (err) {
+      console.error('❌ Tracking error:', err);
       setError('Failed to fetch booking details. Please try again.');
     } finally {
       setLoading(false);
@@ -378,85 +384,6 @@ export default function TrackBooking() {
                   </CardContent>
                 </Card>
               </div>
-
-              {/* Vehicles & Security */}
-              <Card className="border-0 shadow-xl">
-                <CardHeader className="bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-t-2xl py-6">
-                  <CardTitle className="flex items-center text-xl sm:text-2xl">
-                    <Car className="w-5 h-5 sm:w-6 sm:h-6 mr-3" />
-                    Booking Details
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 sm:p-6">
-                  {/* Vehicles */}
-                  <div className="mb-4 sm:mb-6">
-                    <h4 className="font-semibold text-lg sm:text-xl mb-3 flex items-center text-gray-900">
-                      <Car className="w-5 h-5 mr-2 text-orange-500" />
-                      Vehicles
-                    </h4>
-                    <div className="space-y-3">
-                      {Array.isArray(booking.vehicles) && booking.vehicles.map((vehicle: any, index: number) => (
-                        <div key={index} className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-gray-200 gap-2">
-                          <div className="flex-1">
-                            <span className="font-medium text-base sm:text-lg text-gray-900">{vehicle.name}</span>
-                            <span className="text-gray-600 ml-2 text-sm sm:text-base">(x{vehicle.quantity})</span>
-                            <div className="text-xs sm:text-sm text-gray-500 mt-1">
-                              {vehicle.days} day{vehicle.days !== 1 ? 's' : ''} • {formatPrice(vehicle.subtotal)}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-semibold text-base sm:text-lg text-orange-600">{formatPrice(vehicle.subtotal)}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Security Personnel */}
-                  {booking.securityPersonnel && (
-                    <div className="mb-4 sm:mb-6">
-                      <h4 className="font-semibold text-lg sm:text-xl mb-3 flex items-center text-gray-900">
-                        <Shield className="w-5 h-5 mr-2 text-blue-500" />
-                        Security Personnel
-                      </h4>
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2">
-                        <div className="flex-1">
-                          <span className="font-medium text-base sm:text-lg text-gray-900">{booking.securityPersonnel.count} personnel</span>
-                          <div className="text-xs sm:text-sm text-gray-500 mt-1">
-                            {booking.securityPersonnel.days} day{booking.securityPersonnel.days !== 1 ? 's' : ''} • ₦15,000/day each
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-semibold text-base sm:text-lg text-orange-600">{formatPrice(booking.securityPersonnel.subtotal)}</div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Total */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-4 border-t-2 border-orange-200 gap-2">
-                    <span className="text-lg sm:text-xl font-bold text-gray-900">Total Amount</span>
-                    <span className="text-xl sm:text-2xl font-bold text-orange-600">
-                      {formatPrice(booking.totalAmount)}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Notes */}
-              {booking.notes && (
-                <Card className="border-0 shadow-lg">
-                  <CardHeader className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-t-2xl py-4 sm:py-6">
-                    <CardTitle className="flex items-center text-lg sm:text-xl text-yellow-900">
-                      <AlertCircle className="w-5 h-5 mr-2" />
-                      Admin Notes
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 sm:p-6">
-                    <p className="text-gray-700 text-sm sm:text-base leading-relaxed">{booking.notes}</p>
-                  </CardContent>
-                </Card>
-              )}
 
               {/* Support Section */}
               <Card className="border-0 shadow-lg bg-gradient-to-br from-gray-900 to-gray-800 text-white">

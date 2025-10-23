@@ -1,103 +1,189 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
-import { generateBookingRef } from '@/lib/utils'
+// src/app/api/bookings/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { bookings } from '@/lib/schema';
+import { eq } from 'drizzle-orm';
+import { generateBookingRef, calculateDays } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    
+    const body = await request.json();
+    console.log('📦 Booking POST - Received data:', body);
+
+    const {
+      name,
+      email,
+      phone,
+      pickup,
+      destination,
+      vehicleIds,
+      rentalDays,
+      securityPersonnel,
+      totalPrice,
+      startDate,
+      endDate,
+      notes,
+    } = body;
+
     // Validate required fields
-    if (!body.customerName || !body.phone || !body.pickupLocation || !body.dropoffLocation) {
+    if (!name || !phone || !pickup || !destination || !vehicleIds || !startDate || !endDate) {
+      console.error('❌ Booking POST - Missing required fields:', {
+        name: !!name,
+        phone: !!phone,
+        pickup: !!pickup,
+        destination: !!destination,
+        vehicleIds: !!vehicleIds,
+        startDate: !!startDate,
+        endDate: !!endDate
+      });
+      
       return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
+        { 
+          success: false,
+          error: 'Missing required fields',
+          missing: {
+            name: !name,
+            phone: !phone,
+            pickup: !pickup,
+            destination: !destination,
+            vehicleIds: !vehicleIds,
+            startDate: !startDate,
+            endDate: !endDate
+          }
+        },
         { status: 400 }
-      )
+      );
     }
 
-    // Calculate total amount
-    const vehiclesTotal = body.vehicles.reduce((sum: number, vehicle: any) => 
-      sum + vehicle.subtotal, 0
-    )
-    const securityTotal = body.securityPersonnel?.subtotal || 0
-    const totalAmount = vehiclesTotal + securityTotal
+    // Calculate rental days
+    const rentalDaysCalc = calculateDays(startDate, endDate);
+    console.log('📅 Booking POST - Rental days calculated:', rentalDaysCalc);
 
-    // Create booking with proper JSON serialization
-    const booking = await prisma.booking.create({
-      data: {
-        refNumber: generateBookingRef(),
-        customerName: body.customerName,
-        phone: body.phone,
-        email: body.email,
-        pickupLocation: body.pickupLocation,
-        dropoffLocation: body.dropoffLocation,
-        startDate: new Date(body.startDate),
-        endDate: new Date(body.endDate),
-        vehicles: JSON.stringify(body.vehicles), // Stringify JSON
-        securityPersonnel: body.securityPersonnel ? JSON.stringify(body.securityPersonnel) : null, // Stringify JSON
-        totalAmount,
-        status: 'PENDING',
-        paymentStatus: 'PENDING',
-        notes: body.notes || null
-      }
-    })
+    // Prepare vehicles data - ensure it's properly stringified
+    const vehiclesData = JSON.stringify({
+      vehicleIds: Array.isArray(vehicleIds) ? vehicleIds : [vehicleIds],
+      rentalDays: rentalDays || rentalDaysCalc,
+    });
+
+    console.log('🚗 Booking POST - Vehicles data:', vehiclesData);
+
+    // Generate unique booking reference
+    const refNumber = generateBookingRef();
+    console.log('🔖 Booking POST - Generated ref:', refNumber);
+
+    // Create booking
+    const [newBooking] = await db.insert(bookings).values({
+      refNumber,
+      customerName: name,
+      email: email || null,
+      phone,
+      pickupLocation: pickup,
+      dropoffLocation: destination,
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      vehicles: vehiclesData,
+      securityPersonnel: securityPersonnel ? JSON.stringify(securityPersonnel) : null,
+      totalAmount: parseInt(totalPrice) || 0,
+      status: 'PENDING',
+      paymentStatus: 'PENDING',
+      notes: notes || null,
+    }).returning();
+
+    if (!newBooking) {
+      console.error('❌ Booking POST - Failed to create booking in database');
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'Failed to create booking' 
+        },
+        { status: 500 }
+      );
+    }
+
+    console.log('✅ Booking POST - Booking created successfully:', newBooking.refNumber);
 
     return NextResponse.json({
       success: true,
-      data: {
-        id: booking.id,
-        refNumber: booking.refNumber,
-        totalAmount: booking.totalAmount,
-        status: booking.status
-      }
-    })
+      bookingId: newBooking.refNumber,
+      message: 'Booking created successfully',
+      booking: newBooking
+    });
+
   } catch (error) {
-    console.error('Failed to create booking:', error)
+    console.error('❌ Booking POST - Error creating booking:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to create booking' },
+      { 
+        success: false,
+        error: 'Failed to create booking',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
-    )
+    );
   }
 }
 
+// In the GET function of your bookings API route
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url)
-  const refNumber = searchParams.get('ref')
-
-  if (!refNumber) {
-    return NextResponse.json(
-      { success: false, error: 'Booking reference is required' },
-      { status: 400 }
-    )
-  }
-
   try {
-    const booking = await prisma.booking.findUnique({
-      where: { refNumber }
-    })
+    const { searchParams } = new URL(request.url);
+    const bookingId = searchParams.get('bookingId');
+    const email = searchParams.get('email'); // This is now optional
+
+    console.log('📖 Booking GET - Searching for booking:', { bookingId, email });
+
+    if (!bookingId) {
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'Booking ID is required' 
+        },
+        { status: 400 }
+      );
+    }
+
+    const [booking] = await db
+      .select()
+      .from(bookings)
+      .where(eq(bookings.refNumber, bookingId))
+      .limit(1);
 
     if (!booking) {
+      console.log('❌ Booking GET - Booking not found:', bookingId);
       return NextResponse.json(
-        { success: false, error: 'Booking not found' },
+        { 
+          success: false,
+          error: 'Booking not found' 
+        },
         { status: 404 }
-      )
+      );
     }
 
-    // Parse JSON fields back to objects
-    const bookingWithParsedData = {
-      ...booking,
-      vehicles: JSON.parse(booking.vehicles),
-      securityPersonnel: booking.securityPersonnel ? JSON.parse(booking.securityPersonnel) : null
+    // Email verification is now optional
+    if (email && booking.email?.toLowerCase() !== email.toLowerCase()) {
+      console.log('❌ Booking GET - Email mismatch');
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'Invalid credentials' 
+        },
+        { status: 401 }
+      );
     }
 
+    console.log('✅ Booking GET - Booking found:', booking.refNumber);
     return NextResponse.json({
       success: true,
-      data: bookingWithParsedData
-    })
+      data: booking
+    });
+
   } catch (error) {
-    console.error('Failed to fetch booking:', error)
+    console.error('❌ Booking GET - Error fetching booking:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch booking' },
+      { 
+        success: false,
+        error: 'Failed to fetch booking' 
+      },
       { status: 500 }
-    )
+    );
   }
 }

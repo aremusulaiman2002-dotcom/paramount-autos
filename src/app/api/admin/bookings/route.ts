@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { db } from '@/lib/db'
+import { bookings } from '@/lib/schema'
+import { eq, desc, sql } from 'drizzle-orm'
 
 // Define types for the booking data
 interface BookingData {
@@ -26,33 +28,37 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
     
-    const where = status ? { status } : {}
-    
-    const bookings = await prisma.booking.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        refNumber: true,
-        customerName: true,
-        phone: true,
-        email: true,
-        totalAmount: true,
-        status: true,
-        paymentStatus: true,
-        createdAt: true,
-        startDate: true,
-        endDate: true,
-        pickupLocation: true,
-        dropoffLocation: true,
-        vehicles: true,
-        securityPersonnel: true,
-        notes: true,
-      }
-    })
+    let query = db
+      .select({
+        id: bookings.id,
+        refNumber: bookings.refNumber,
+        customerName: bookings.customerName,
+        phone: bookings.phone,
+        email: bookings.email,
+        totalAmount: bookings.totalAmount,
+        status: bookings.status,
+        paymentStatus: bookings.paymentStatus,
+        createdAt: bookings.createdAt,
+        startDate: bookings.startDate,
+        endDate: bookings.endDate,
+        pickupLocation: bookings.pickupLocation,
+        dropoffLocation: bookings.dropoffLocation,
+        vehicles: bookings.vehicles,
+        securityPersonnel: bookings.securityPersonnel,
+        notes: bookings.notes,
+      })
+      .from(bookings)
+      .orderBy(desc(bookings.createdAt))
+
+    // Add status filter if provided
+    if (status) {
+      query = query.where(eq(bookings.status, status))
+    }
+
+    const bookingsData = await query
 
     // Parse JSON fields for admin display
-    const bookingsWithParsedData = bookings.map((booking: BookingData) => ({
+    const bookingsWithParsedData = bookingsData.map((booking: BookingData) => ({
       ...booking,
       vehicles: JSON.parse(booking.vehicles),
       securityPersonnel: booking.securityPersonnel ? JSON.parse(booking.securityPersonnel) : null
@@ -75,24 +81,22 @@ export async function POST(request: NextRequest) {
     // Generate a unique reference number
     const refNumber = `PMT-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`
 
-    const booking = await prisma.booking.create({
-      data: {
-        refNumber,
-        customerName: body.customerName,
-        phone: body.phone,
-        email: body.email,
-        pickupLocation: body.pickupLocation,
-        dropoffLocation: body.dropoffLocation,
-        startDate: new Date(body.startDate),
-        endDate: new Date(body.endDate),
-        vehicles: JSON.stringify(body.vehicles || []),
-        securityPersonnel: body.securityPersonnel ? JSON.stringify(body.securityPersonnel) : null,
-        totalAmount: body.totalAmount,
-        notes: body.notes,
-        status: 'PENDING',
-        paymentStatus: 'PENDING',
-      }
-    })
+    const [booking] = await db.insert(bookings).values({
+      refNumber,
+      customerName: body.customerName,
+      phone: body.phone,
+      email: body.email,
+      pickupLocation: body.pickupLocation,
+      dropoffLocation: body.dropoffLocation,
+      startDate: new Date(body.startDate),
+      endDate: new Date(body.endDate),
+      vehicles: JSON.stringify(body.vehicles || []),
+      securityPersonnel: body.securityPersonnel ? JSON.stringify(body.securityPersonnel) : null,
+      totalAmount: body.totalAmount,
+      notes: body.notes,
+      status: 'PENDING',
+      paymentStatus: 'PENDING',
+    }).returning()
 
     return NextResponse.json(booking, { status: 201 })
   } catch (error) {

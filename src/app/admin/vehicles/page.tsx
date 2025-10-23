@@ -4,7 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { formatPrice } from '@/lib/utils'
 import { Plus, Car, Edit, Trash2, Eye } from 'lucide-react'
-import { prisma } from '@/lib/db'
+import { db } from '@/lib/db'
+import { vehicles } from '@/lib/schema'
+import { desc } from 'drizzle-orm'
 
 interface Vehicle {
   id: string
@@ -12,19 +14,21 @@ interface Vehicle {
   type: string
   pricePerDay: number
   availability: boolean
-  image?: string
+  image: string | null // Updated to match Drizzle
   description: string
   features: string
-  createdAt: Date
-  updatedAt: Date
+  createdAt: Date | null // Added null
+  updatedAt: Date | null // Added null
 }
 
 async function getVehicles(): Promise<Vehicle[]> {
   try {
-    const vehicles = await prisma.vehicle.findMany({
-      orderBy: { createdAt: 'desc' }
-    })
-    return vehicles as Vehicle[]
+    const allVehicles = await db
+      .select()
+      .from(vehicles)
+      .orderBy(desc(vehicles.createdAt))
+
+    return allVehicles as Vehicle[]
   } catch (error) {
     console.error('Error fetching vehicles:', error)
     return []

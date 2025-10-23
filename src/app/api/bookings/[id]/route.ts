@@ -1,17 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { db } from '@/lib/db'
+import { bookings } from '@/lib/schema'
+import { eq } from 'drizzle-orm'
 
 interface Context {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export async function GET(request: NextRequest, context: Context) {
   try {
-    const booking = await prisma.booking.findUnique({
-      where: { id: context.params.id }
-    })
+    const { id } = await context.params
+
+    const [booking] = await db
+      .select()
+      .from(bookings)
+      .where(eq(bookings.id, id))
+      .limit(1)
 
     if (!booking) {
       return NextResponse.json(
@@ -35,20 +41,42 @@ export async function GET(request: NextRequest, context: Context) {
 
 export async function PUT(request: NextRequest, context: Context) {
   try {
+    const { id } = await context.params
     const body = await request.json()
     
-    const booking = await prisma.booking.update({
-      where: { id: context.params.id },
-      data: {
+    const [existingBooking] = await db
+      .select()
+      .from(bookings)
+      .where(eq(bookings.id, id))
+      .limit(1)
+
+    if (!existingBooking) {
+      return NextResponse.json(
+        { success: false, error: 'Booking not found' },
+        { status: 404 }
+      )
+    }
+
+    const [updatedBooking] = await db
+      .update(bookings)
+      .set({
         status: body.status,
         paymentStatus: body.paymentStatus,
         notes: body.notes
-      }
-    })
+      })
+      .where(eq(bookings.id, id))
+      .returning()
+
+    if (!updatedBooking) {
+      return NextResponse.json(
+        { success: false, error: 'Failed to update booking' },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json({
       success: true,
-      data: booking
+      data: updatedBooking
     })
   } catch (error) {
     console.error('Failed to update booking:', error)

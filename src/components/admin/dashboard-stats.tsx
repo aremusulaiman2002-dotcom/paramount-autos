@@ -20,40 +20,47 @@ interface DashboardStatsProps {
   }
 }
 
-const stats = [
+interface StatConfig {
+  title: string
+  value: (data: DashboardStatsProps['data']) => string | number
+  icon: React.ComponentType<any>
+  color: string
+}
+
+const stats: StatConfig[] = [
   {
     title: 'Total Bookings',
-    value: (data: any) => data.totalBookings,
+    value: (data) => data.totalBookings,
     icon: Calendar,
     color: 'bg-blue-500'
   },
   {
     title: 'Pending Bookings',
-    value: (data: any) => data.pendingBookings,
+    value: (data) => data.pendingBookings,
     icon: Clock,
     color: 'bg-orange-500'
   },
   {
     title: 'Confirmed Bookings',
-    value: (data: any) => data.confirmedBookings,
+    value: (data) => data.confirmedBookings,
     icon: CheckCircle,
     color: 'bg-green-500'
   },
   {
     title: 'Available Vehicles',
-    value: (data: any) => data.availableVehicles,
+    value: (data) => data.availableVehicles,
     icon: Car,
     color: 'bg-purple-500'
   },
   {
     title: 'Total Revenue',
-    value: (data: any) => formatPrice(data.totalRevenue),
+    value: (data) => formatPrice(data.totalRevenue),
     icon: DollarSign,
     color: 'bg-emerald-500'
   },
   {
     title: 'Completed Trips',
-    value: (data: any) => data.completedBookings,
+    value: (data) => data.completedBookings,
     icon: Users,
     color: 'bg-indigo-500'
   },

@@ -10,17 +10,13 @@ interface Booking {
   refNumber: string
   customerName: string
   phone: string
-  email?: string
+  email: string | null // Updated to match Drizzle schema
   totalAmount: number
-  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED'
-  paymentStatus: 'PENDING' | 'VERIFIED' | 'FAILED'
-  createdAt: Date
+  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | null // Added null
+  paymentStatus: 'PENDING' | 'VERIFIED' | 'FAILED' | null // Added null
+  createdAt: Date | null // Added null
   vehicles: string
-  securityPersonnel?: string
-}
-
-interface RecentBookingsProps {
-  bookings: Booking[]
+  securityPersonnel: string | null // Updated to match Drizzle schema
 }
 
 interface RecentBookingsProps {
@@ -28,7 +24,7 @@ interface RecentBookingsProps {
 }
 
 export default function RecentBookings({ bookings }: RecentBookingsProps) {
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | null) => { // Allow null
     switch (status) {
       case 'CONFIRMED':
         return 'bg-green-100 text-green-800'
@@ -41,7 +37,7 @@ export default function RecentBookings({ bookings }: RecentBookingsProps) {
     }
   }
 
-  const getPaymentStatusColor = (status: string) => {
+  const getPaymentStatusColor = (status: string | null) => { // Allow null
     switch (status) {
       case 'VERIFIED':
         return 'bg-green-100 text-green-800'
@@ -122,13 +118,16 @@ export default function RecentBookings({ bookings }: RecentBookingsProps) {
                           {booking.customerName}
                         </h3>
                         <p className="text-sm text-gray-600">{booking.phone}</p>
+                        {booking.email && (
+                          <p className="text-sm text-gray-500">{booking.email}</p>
+                        )}
                       </div>
                       <div className="flex items-center space-x-2">
                         <Badge className={getStatusColor(booking.status)}>
-                          {booking.status.toLowerCase()}
+                          {booking.status?.toLowerCase() || 'unknown'}
                         </Badge>
                         <Badge variant="outline" className={getPaymentStatusColor(booking.paymentStatus)}>
-                          {booking.paymentStatus.toLowerCase()}
+                          {booking.paymentStatus?.toLowerCase() || 'unknown'}
                         </Badge>
                       </div>
                     </div>
@@ -150,7 +149,7 @@ export default function RecentBookings({ bookings }: RecentBookingsProps) {
                       <div>
                         <span className="font-medium">Booked:</span>
                         <span className="ml-2">
-                          {formatDisplayDate(booking.createdAt)}
+                          {booking.createdAt ? formatDisplayDate(booking.createdAt) : 'Unknown date'}
                         </span>
                       </div>
                     </div>
