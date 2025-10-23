@@ -11,18 +11,25 @@ export async function GET(request: NextRequest) {
     
     console.log('📖 Admin Bookings GET - Fetching bookings with status:', status)
 
-    // Simple approach - get all bookings first
+    // Get all bookings
     let bookingsData = await db.select().from(bookings).orderBy(desc(bookings.createdAt))
 
-    // Then filter by status if needed
+    // Filter by status if needed
     if (status && ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'].includes(status)) {
       bookingsData = bookingsData.filter(booking => booking.status === status)
     }
 
     console.log('✅ Admin Bookings GET - Found bookings:', bookingsData.length)
 
-    // Return the raw array - this is what your admin portal expects
-    return NextResponse.json(bookingsData)
+    // Parse the JSON strings into objects for the admin portal
+    const parsedBookings = bookingsData.map(booking => ({
+      ...booking,
+      vehicles: JSON.parse(booking.vehicles),
+      securityPersonnel: booking.securityPersonnel ? JSON.parse(booking.securityPersonnel) : null
+    }))
+
+    // Return the parsed data
+    return NextResponse.json(parsedBookings)
 
   } catch (error) {
     console.error('❌ Admin Bookings GET - Error:', error)
