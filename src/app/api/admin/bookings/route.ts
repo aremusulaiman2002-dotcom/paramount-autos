@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { bookings } from '@/lib/schema'
-import { eq, desc } from 'drizzle-orm'
+import { sql } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,18 +11,22 @@ export async function GET(request: NextRequest) {
     
     console.log('📖 Admin Bookings GET - Fetching bookings with status:', status)
 
-    // Get all bookings
-    let bookingsData = await db.select().from(bookings).orderBy(desc(bookings.createdAt))
-
-    // Filter by status if needed
+    // Use the same approach as analytics - raw SQL queries
+    let query = sql`SELECT * FROM bookings`
+    
     if (status && ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'].includes(status)) {
-      bookingsData = bookingsData.filter(booking => booking.status === status)
+      query = sql`SELECT * FROM bookings WHERE status = ${status}`
     }
 
-    console.log('✅ Admin Bookings GET - Found bookings:', bookingsData.length)
+    // Add ordering
+    query = sql`${query} ORDER BY created_at DESC`
 
-    // Parse the JSON strings into objects for the admin portal
-    const parsedBookings = bookingsData.map(booking => ({
+    const bookingsData = await db.execute(query)
+
+    console.log('✅ Admin Bookings GET - Found bookings:', bookingsData.rows.length)
+
+    // Parse the JSON strings into objects
+    const parsedBookings = bookingsData.rows.map((booking: any) => ({
       ...booking,
       vehicles: JSON.parse(booking.vehicles),
       securityPersonnel: booking.securityPersonnel ? JSON.parse(booking.securityPersonnel) : null
