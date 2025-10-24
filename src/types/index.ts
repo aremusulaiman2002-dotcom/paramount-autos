@@ -3,7 +3,7 @@ export interface Vehicle {
   name: string
   type: string
   pricePerDay: number
-  availability: boolean 
+  availability: boolean
   image?: string
   description: string
   features: string[]
