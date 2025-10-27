@@ -1,3 +1,4 @@
+// app/layout.tsx
 import './globals.css'
 import { Inter, Poppins } from 'next/font/google'
 import SessionProvider from '@/components/providers/SessionProvider'
@@ -25,6 +26,21 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${poppins.variable} ${inter.variable}`}>
+      <head>
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/site.webmanifest" />
+        <meta name="theme-color" content="#f97316" />
+        <meta property="og:title" content="Paramount Autos - Premium Vehicle Rental & Executive Security" />
+        <meta property="og:description" content="Experience unparalleled luxury and security with Paramount Autos. Premium vehicle rentals and professional security services." />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="/og-image.jpg" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Paramount Autos" />
+        <meta name="twitter:description" content="Premium Vehicle Rental & Executive Security" />
+      </head>
       <body className="font-sans antialiased bg-white">
         <SessionProvider>
           {children}

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Car, Shield, Users, MapPin, Clock, CheckCircle, Star, Phone, Menu, X } from 'lucide-react'
+import Image from 'next/image'
+import { Shield, Users, MapPin, Clock, CheckCircle, Star, Phone, Menu, X } from 'lucide-react'
 
 function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
@@ -22,16 +23,28 @@ function Header() {
     }`}>
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between py-3">
-          {/* Logo */}
+          {/* Logo with SVG */}
           <Link href="/" className="flex items-center space-x-2 group flex-shrink-0">
-            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300">
-              <Car className="w-5 h-5 text-white" />
-            </div>
-            <div className="text-left">
-              <div className="text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent leading-tight">
-                PARAMOUNT
+            <div className="flex items-center space-x-2">
+              {/* SVG Logo */}
+              <div className="w-10 h-10 relative">
+                <Image
+                  src="/logo.svg" // Your SVG logo path
+                  alt="Paramount Autos Logo"
+                  width={40}
+                  height={40}
+                  className="object-contain"
+                  priority
+                />
               </div>
-              <div className="text-[10px] font-medium text-orange-600 tracking-wider leading-tight">PREMIUM AUTOS</div>
+              
+              {/* Brand Name */}
+              <div className="text-left">
+                <div className="text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent leading-tight">
+                  PARAMOUNT
+                </div>
+                <div className="text-[10px] font-medium text-orange-600 tracking-wider leading-tight">PREMIUM AUTOS</div>
+              </div>
             </div>
           </Link>
 
@@ -136,11 +149,11 @@ function Header() {
 export default function ServicesPage() {
   const services = [
     {
-      icon: Car,
+      icon: Shield,
       title: 'Luxury Vehicle Rental',
       description: 'Premium vehicles for every occasion, from executive sedans to spacious SUVs.',
       features: ['Mercedes-Benz S-Class', 'Toyota Land Cruiser', 'BMW 7 Series', 'Range Rover Sport & many more'],
-      price: 'Starting from ₦50,000/day',
+      price: 'Starting from ₦120,000/day',
       gradient: 'from-blue-500 to-indigo-500'
     },
     {
@@ -148,7 +161,7 @@ export default function ServicesPage() {
       title: 'Executive Security',
       description: 'Professional security personnel for personal protection and corporate events.',
       features: ['Armed Security Personnel', 'Close Protection Officers', 'Event Security Teams', '24/7 Monitoring'],
-      price: 'Starting from ₦25,000/person/day',
+      price: 'Starting from ₦15,000/person/day',
       gradient: 'from-green-500 to-emerald-500'
     },
     {

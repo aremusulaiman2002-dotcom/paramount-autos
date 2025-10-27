@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
-import { Car, Shield, Star, MapPin, CheckCircle, Phone, Mail, Clock, Menu, X } from 'lucide-react'
+import { Shield, Star, MapPin, CheckCircle, Phone, Mail, Clock, Menu, X } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 function Header() {
@@ -23,16 +24,28 @@ function Header() {
     }`}>
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between py-3">
-          {/* Logo */}
+          {/* Logo with SVG */}
           <Link href="/" className="flex items-center space-x-2 group flex-shrink-0">
-            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300">
-              <Car className="w-5 h-5 text-white" />
-            </div>
-            <div className="text-left">
-              <div className="text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent leading-tight">
-                PARAMOUNT
+            <div className="flex items-center space-x-2">
+              {/* SVG Logo - Replace /logo.svg with your actual logo path */}
+              <div className="w-10 h-10 relative">
+                <Image
+                  src="/logo.svg" // Change this to your SVG logo path
+                  alt="Paramount Autos Logo"
+                  width={40}
+                  height={40}
+                  className="object-contain"
+                  priority
+                />
               </div>
-              <div className="text-[10px] font-medium text-orange-600 tracking-wider leading-tight">PREMIUM AUTOS</div>
+              
+              {/* Brand Name */}
+              <div className="text-left">
+                <div className="text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent leading-tight">
+                  PARAMOUNT
+                </div>
+                <div className="text-[10px] font-medium text-orange-600 tracking-wider leading-tight">PREMIUM AUTOS</div>
+              </div>
             </div>
           </Link>
 
@@ -69,7 +82,7 @@ function Header() {
             </Link>
           </div>
 
-          {/* Mobile Menu Button - Improved Visibility */}
+          {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="lg:hidden w-12 h-12 flex items-center justify-center bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
@@ -82,7 +95,7 @@ function Header() {
           </button>
         </div>
 
-        {/* Mobile Navigation Menu - Improved Styling */}
+        {/* Mobile Navigation Menu */}
         {isMobileMenuOpen && (
           <div className="lg:hidden border-t border-gray-200 pt-4 pb-6 bg-white/95 backdrop-blur-sm shadow-2xl rounded-b-2xl mx-2 mb-2">
             <nav className="flex flex-col space-y-1 px-4">
@@ -106,7 +119,7 @@ function Header() {
                 </Link>
               ))}
               
-              {/* Mobile CTA - Improved Styling */}
+              {/* Mobile CTA */}
               <div className="pt-4 mt-2 border-t border-gray-200">
                 <div className="flex items-center space-x-3 text-gray-700 mb-4 px-4 py-2 bg-gray-50 rounded-lg">
                   <Phone className="w-4 h-4 text-orange-500" />
@@ -138,8 +151,15 @@ function Footer() {
             {/* Brand Column */}
             <div className="lg:col-span-1">
               <div className="flex items-center space-x-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl flex items-center justify-center shadow-lg">
-                  <Car className="w-5 h-5 text-white" />
+                {/* Footer Logo */}
+                <div className="w-10 h-10 relative">
+                  <Image
+                    src="/logo.svg" // Same SVG logo in footer
+                    alt="Paramount Autos Logo"
+                    width={40}
+                    height={40}
+                    className="object-contain"
+                  />
                 </div>
                 <div>
                   <div className="text-lg font-bold text-white">PARAMOUNT</div>
@@ -296,7 +316,16 @@ export default function HomePage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="text-center p-6 bg-gray-50 rounded-2xl">
                 <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Car className="w-7 h-7 text-orange-600" />
+                  {/* Car icon replaced with logo in header, keeping icon here for features */}
+                  <div className="w-7 h-7 relative">
+                    <Image
+                      src="/logo.svg"
+                      alt="Premium Fleet"
+                      width={28}
+                      height={28}
+                      className="object-contain"
+                    />
+                  </div>
                 </div>
                 <h3 className="text-xl font-semibold mb-3">Premium Fleet</h3>
                 <p className="text-gray-600 text-sm leading-relaxed">
