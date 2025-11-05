@@ -82,7 +82,7 @@ function Header() {
           <div className="hidden lg:flex items-center space-x-3">
             <div className="hidden xl:flex items-center space-x-2 bg-gradient-to-r from-orange-50 to-amber-50 px-3 py-2 rounded-full border border-orange-200">
               <Phone className="w-3 h-3 text-orange-600" />
-              <span className="font-semibold text-orange-700 text-sm">+234 800 000 0000</span>
+              <span className="font-semibold text-orange-700 text-sm">+234 916 892 3000</span>
             </div>
             <Link
               href="/booking"
@@ -129,7 +129,7 @@ function Header() {
               <div className="pt-4 mt-2 border-t border-gray-200">
                 <div className="flex items-center space-x-3 text-gray-700 mb-4 px-4 py-2 bg-gray-50 rounded-lg">
                   <Phone className="w-4 h-4 text-orange-500" />
-                  <span className="font-semibold">+234 800 000 0000</span>
+                  <span className="font-semibold">+234 916 892 3000</span>
                 </div>
                 <Link
                   href="/booking"

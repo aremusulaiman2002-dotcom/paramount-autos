@@ -44,7 +44,7 @@ function Header() {
                 <div className="text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent leading-tight">
                   PARAMOUNT
                 </div>
-                <div className="text-[10px] font-medium text-orange-600 tracking-wider leading-tight">PREMIUM AUTOS</div>
+                <div className="text-[10px] font-medium text-orange-600 tracking-wider leading-tight">AUTOMOBILES</div>
               </div>
             </div>
           </Link>
@@ -72,7 +72,7 @@ function Header() {
           <div className="hidden lg:flex items-center space-x-3">
             <div className="hidden xl:flex items-center space-x-2 bg-gradient-to-r from-orange-50 to-amber-50 px-3 py-2 rounded-full border border-orange-200">
               <Phone className="w-3 h-3 text-orange-600" />
-              <span className="font-semibold text-orange-700 text-sm">+234 800 000 0000</span>
+              <span className="font-semibold text-orange-700 text-sm">+234 916 892 3000</span>
             </div>
             <Link
               href="/booking"
@@ -123,7 +123,7 @@ function Header() {
               <div className="pt-4 mt-2 border-t border-gray-200">
                 <div className="flex items-center space-x-3 text-gray-700 mb-4 px-4 py-2 bg-gray-50 rounded-lg">
                   <Phone className="w-4 h-4 text-orange-500" />
-                  <span className="font-semibold">+234 800 000 0000</span>
+                  <span className="font-semibold">+234 916 892 3000</span>
                 </div>
                 <Link
                   href="/booking"
@@ -163,12 +163,12 @@ function Footer() {
                 </div>
                 <div>
                   <div className="text-lg font-bold text-white">PARAMOUNT</div>
-                  <div className="text-xs font-medium text-orange-400 tracking-wider">PREMIUM AUTOS</div>
+                  <div className="text-xs font-medium text-orange-400 tracking-wider">AUTOMOBILES</div>
                 </div>
               </div>
               <p className="text-gray-300 text-sm leading-relaxed mb-4">
                 Experience unparalleled luxury and security with our premium fleet of vehicles 
-                and professional security personnel.
+                and professional security officers.
               </p>
             </div>
 
@@ -220,7 +220,7 @@ function Footer() {
                 <div className="flex items-center space-x-2">
                   <Phone className="w-4 h-4 text-orange-400" />
                   <div>
-                    <div className="text-white font-semibold text-sm">+234 800 000 0000</div>
+                    <div className="text-white font-semibold text-sm">+234 916 892 3000</div>
                     <div className="text-orange-400 text-xs">24/7 Service</div>
                   </div>
                 </div>
@@ -228,7 +228,7 @@ function Footer() {
                 <div className="flex items-center space-x-2">
                   <Mail className="w-4 h-4 text-orange-400" />
                   <div>
-                    <div className="text-white font-semibold text-sm">info@paramount.com</div>
+                    <div className="text-white font-semibold text-sm">Paramountautosabj@gmail.com</div>
                     <div className="text-orange-400 text-xs">Email Support</div>
                   </div>
                 </div>
@@ -286,7 +286,7 @@ export default function HomePage() {
             </p>
             <p className="text-base sm:text-lg mb-8 text-gray-300 max-w-2xl mx-auto leading-relaxed px-4">
               Experience unparalleled luxury and security with our premium fleet of vehicles 
-              and professional security personnel for your most important journeys.
+              and professional security officers for your most important journeys.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center px-4">
               <Link href="/booking" className="w-full sm:w-auto">
@@ -340,7 +340,7 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-xl font-semibold mb-3">Executive Security</h3>
                 <p className="text-gray-600 text-sm leading-relaxed">
-                  Professional security personnel trained to ensure your safety and peace of mind 
+                  Professional security officers trained to ensure your safety and peace of mind 
                   throughout your journey.
                 </p>
               </div>
@@ -408,7 +408,7 @@ export default function HomePage() {
                     <h3 className="text-xl font-semibold">Service Areas</h3>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    {['Lagos', 'Abuja', 'Port Harcourt', 'Kano', 'Ibadan', 'Enugu', 'Kaduna', 'Benin'].map((city) => (
+                    {['Lagos', 'Abuja', 'Port Harcourt', 'Kano', 'Imo', 'Cross River','Delta', 'Jos', 'Kaduna', 'Benin', 'United Kingdom', 'Ghana', 'Dubai'].map((city) => (
                       <div key={city} className="flex items-center">
                         <div className="w-1.5 h-1.5 bg-orange-500 rounded-full mr-2"></div>
                         <span className="text-gray-700 text-sm">{city}</span>
@@ -453,7 +453,7 @@ export default function HomePage() {
               </div>
               <div>
                 <div className="text-2xl sm:text-3xl font-bold text-orange-500 mb-1">100+</div>
-                <div className="text-gray-300 text-sm">Security Personnel</div>
+                <div className="text-gray-300 text-sm">Security Officers</div>
               </div>
               <div>
                 <div className="text-2xl sm:text-3xl font-bold text-orange-500 mb-1">24/7</div>
