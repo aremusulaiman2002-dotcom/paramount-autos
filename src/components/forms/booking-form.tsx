@@ -460,9 +460,9 @@ export default function BookingForm({ vehicles }: BookingFormProps) {
 
                 {/* Navigation */}
                 <div className="flex flex-col sm:flex-row justify-between items-center mt-8 pt-6 border-t border-gray-200 space-y-4 sm:space-y-0">
-                  <Link href="/vehicles" className="text-orange-600 hover:text-orange-700 font-medium flex items-center">
+                  <Link href="/" className="text-orange-600 hover:text-orange-700 font-medium flex items-center">
                     <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back to Fleet
+                    Back to Home
                   </Link>
                   <div className="flex items-center space-x-4">
                     <span className="text-gray-600">
