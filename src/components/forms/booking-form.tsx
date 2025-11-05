@@ -205,7 +205,7 @@ export default function BookingForm({ vehicles }: BookingFormProps) {
   // Calculate total price
   const calculateTotal = () => {
     const vehiclesTotal = selectedVehicles.reduce((sum, item) => sum + item.subtotal, 0);
-    const securityTotal = securityCount * 15000 * rentalDays;
+    const securityTotal = securityCount * 30000 * rentalDays;
     return vehiclesTotal + securityTotal;
   };
 
@@ -280,9 +280,9 @@ export default function BookingForm({ vehicles }: BookingFormProps) {
     try {
       const securityData: SecurityPersonnel | undefined = securityCount > 0 ? {
         count: securityCount,
-        rate: 15000,
+        rate: 30000,
         days: rentalDays,
-        subtotal: securityCount * 15000 * rentalDays
+        subtotal: securityCount * 30000 * rentalDays
       } : undefined;
 
       const response = await fetch('/api/bookings', {
@@ -570,21 +570,21 @@ export default function BookingForm({ vehicles }: BookingFormProps) {
                   <div>
                     <Label htmlFor="security" className="text-lg font-semibold mb-2 block flex items-center">
                       <Shield className="w-5 h-5 mr-2 text-orange-500" />
-                      Security Personnel (₦15,000/day each)
+                      Security Officers (₦30,000/day each)
                     </Label>
                     <div className="flex items-center space-x-4">
                       <Input
                         type="number"
                         id="security"
                         min="0"
-                        max="20"
+                        max="50"
                         value={securityCount}
                         onChange={(e) => setSecurityCount(parseInt(e.target.value) || 0)}
                         className="text-lg py-3 rounded-xl flex-1"
                       />
                       {securityCount > 0 && (
                         <div className="text-sm text-orange-600 font-medium bg-orange-50 px-3 py-2 rounded-lg">
-                          {formatPrice(securityCount * 15000 * rentalDays)}
+                          {formatPrice(securityCount * 30000 * rentalDays)}
                         </div>
                       )}
                     </div>
@@ -647,13 +647,13 @@ export default function BookingForm({ vehicles }: BookingFormProps) {
                     {securityCount > 0 && (
                       <div className="flex justify-between items-start pb-3 border-b border-gray-200">
                         <div className="flex-1">
-                          <div className="font-medium text-gray-900">Security Personnel</div>
+                          <div className="font-medium text-gray-900">Security Officers</div>
                           <div className="text-sm text-gray-600">
                             {securityCount} × {rentalDays} day{rentalDays !== 1 ? 's' : ''}
                           </div>
                         </div>
                         <span className="font-semibold text-orange-600">
-                          {formatPrice(securityCount * 15000 * rentalDays)}
+                          {formatPrice(securityCount * 30000 * rentalDays)}
                         </span>
                       </div>
                     )}
@@ -733,7 +733,7 @@ export default function BookingForm({ vehicles }: BookingFormProps) {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="font-semibold">Email Address</Label>
+                    <Label htmlFor="email" className="font-semibold">Email Address *</Label>
                     <Input
                       id="email"
                       type="email"
@@ -779,7 +779,7 @@ export default function BookingForm({ vehicles }: BookingFormProps) {
                       {securityCount > 0 && (
                         <div className="flex justify-between text-sm">
                           <span>Security (x{securityCount})</span>
-                          <span className="font-medium">{formatPrice(securityCount * 15000 * rentalDays)}</span>
+                          <span className="font-medium">{formatPrice(securityCount * 30000 * rentalDays)}</span>
                         </div>
                       )}
                       

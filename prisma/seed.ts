@@ -22,7 +22,7 @@ async function main() {
   try {
     const adminUser = await prisma.user.create({
       data: {
-        email: 'admin@paramountautos.com',
+        email: 'Paramountautosabj@gmail.com',
         name: 'System Administrator',
         password: hashedPassword,
         role: 'SUPER_ADMIN',
