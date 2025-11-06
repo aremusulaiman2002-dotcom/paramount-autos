@@ -9,3 +9,4 @@ export const db = drizzle(sql, { schema });
 export function getDb() {
   return db;
 }
+
