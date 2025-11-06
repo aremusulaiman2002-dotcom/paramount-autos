@@ -205,7 +205,7 @@ export default function RecentBookings({ bookings }: RecentBookingsProps) {
                       <div className="flex items-center space-x-2">
                         <Calendar className="w-4 h-4 text-purple-500" />
                         <span>
-                          {formatDisplayDate(createdAt)}kd
+                             {formatDisplayDate(createdAt)}
                         </span>
                       </div>
 

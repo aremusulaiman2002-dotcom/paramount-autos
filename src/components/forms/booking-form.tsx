@@ -12,6 +12,9 @@ import { Vehicle, SelectedVehicle, SecurityPersonnel } from '@/types';
 import { formatPrice, calculateDays, validateDateRange } from '@/lib/utils';
 import { Car, Shield, Calculator, CheckCircle, MapPin, Clock, User, Phone, Mail, AlertCircle, Plus, Minus, ArrowRight, ArrowLeft, Calendar, Menu, X } from 'lucide-react';
 
+// Add EmailJS imports and initialization
+import { initEmailJS, sendBookingNotification } from '@/lib/emailjs';
+
 interface BookingFormProps {
   vehicles: Vehicle[];
 }
@@ -166,6 +169,11 @@ export default function BookingForm({ vehicles }: BookingFormProps) {
     endDate: '',
   });
 
+  // Initialize EmailJS when component mounts
+  useEffect(() => {
+    initEmailJS();
+  }, []);
+
   // Debug: Log vehicles data
   useEffect(() => {
     console.log('🔧 BookingForm - vehicles received:', vehicles);
@@ -263,62 +271,102 @@ export default function BookingForm({ vehicles }: BookingFormProps) {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
+  
+  if (formData.startDate && formData.endDate && !validateDateRange(formData.startDate, formData.endDate)) {
+    setDateError('Please select valid dates');
+    return;
+  }
+
+  if (!formData.customerName || !formData.phone || !formData.pickupLocation || !formData.dropoffLocation) {
+    alert('Please fill in all required fields');
+    return;
+  }
+
+  setIsSubmitting(true);
+
+  try {
+    const securityData: SecurityPersonnel | undefined = securityCount > 0 ? {
+      count: securityCount,
+      rate: 30000,
+      days: rentalDays,
+      subtotal: securityCount * 30000 * rentalDays
+    } : undefined;
+
+    // 1. First, create the booking in your database
+    const response = await fetch('/api/bookings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: formData.customerName,
+        phone: formData.phone,
+        email: formData.email,
+        pickup: formData.pickupLocation,
+        destination: formData.dropoffLocation,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        vehicleIds: selectedVehicles.map(v => v.vehicleId),
+        rentalDays: rentalDays,
+        securityPersonnel: securityData,
+        totalPrice: totalPrice.toString(),
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('❌ API Error:', errorData);
+      throw new Error(errorData.error || 'Failed to create booking');
+    }
+
+    const result = await response.json();
+    console.log('✅ Booking created successfully:', result);
+
+    // 2. Prepare and send email notification
+    const emailData = {
+      ref_number: result.bookingId,
+      customer_name: formData.customerName,
+      phone: formData.phone,
+      email: formData.email || 'Not provided',
+      pickup_location: formData.pickupLocation,
+      dropoff_location: formData.dropoffLocation,
+      start_date: new Date(formData.startDate).toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }),
+      end_date: new Date(formData.endDate).toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }),
+      vehicles: selectedVehicles.map(v => `${v.name} (x${v.quantity})`).join(', '),
+      total_amount: totalPrice.toLocaleString(),
+    };
+
+    console.log('📧 Sending booking notification...');
+    const emailResult = await sendBookingNotification(emailData);
     
-    if (formData.startDate && formData.endDate && !validateDateRange(formData.startDate, formData.endDate)) {
-      setDateError('Please select valid dates');
-      return;
+    if (emailResult.success) {
+      console.log('✅ Email notification sent successfully');
+    } else {
+      console.warn('⚠️ Booking created but email notification failed:', emailResult.message);
+      // Don't fail the booking if email fails - continue to success page
     }
 
-    if (!formData.customerName || !formData.phone || !formData.pickupLocation || !formData.dropoffLocation) {
-      alert('Please fill in all required fields');
-      return;
-    }
+    // 3. Redirect to success page - FIXED URL
+    router.push(`/booking/success?ref=${result.bookingId}&amount=${totalPrice}`);
 
-    setIsSubmitting(true);
-
-    try {
-      const securityData: SecurityPersonnel | undefined = securityCount > 0 ? {
-        count: securityCount,
-        rate: 30000,
-        days: rentalDays,
-        subtotal: securityCount * 30000 * rentalDays
-      } : undefined;
-
-      const response = await fetch('/api/bookings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.customerName,
-          phone: formData.phone,
-          email: formData.email,
-          pickup: formData.pickupLocation,
-          destination: formData.dropoffLocation,
-          startDate: formData.startDate,
-          endDate: formData.endDate,
-          vehicleIds: selectedVehicles.map(v => v.vehicleId),
-          rentalDays: rentalDays,
-          securityPersonnel: securityData,
-          totalPrice: totalPrice.toString(),
-        }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        router.push(`/booking/success?ref=${result.bookingId}&amount=${totalPrice}`);
-      } else {
-        throw new Error(result.error || 'Failed to create booking');
-      }
-    } catch (error) {
-      console.error('Booking failed:', error);
-      alert('Failed to create booking. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  } catch (error) {
+    console.error('❌ Booking submission error:', error);
+    alert('Failed to create booking. Please try again.');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const steps = [
     { number: 1, title: 'Vehicles', icon: Car },
